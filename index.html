@@ -283,6 +283,13 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            gap: 8px;
+        }
+
+        .expenses-list-header-left {
+            display:flex;
+            align-items:center;
+            gap:8px;
         }
 
         .expenses-list h3 {
@@ -299,6 +306,15 @@
             border-radius: 8px;
             font-size: 12px;
             font-weight: 600;
+            cursor: pointer;
+        }
+
+        .sort-select {
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            font-size: 13px;
+            background: #fff;
             cursor: pointer;
         }
 
@@ -436,6 +452,11 @@
             font-size: 13px;
             margin-bottom: 12px;
         }
+
+        .day-group {
+            margin-bottom: 12px;
+        }
+
     </style>
 </head>
 <body>
@@ -512,7 +533,14 @@
 
         <div class="expenses-list">
             <div class="expenses-list-header">
-                <h3>Riwayat Pengeluaran</h3>
+                <div class="expenses-list-header-left">
+                    <h3>Riwayat Pengeluaran</h3>
+                    <select id="sortSelect" class="sort-select" onchange="setSort(this.value)" title="Urutkan riwayat">
+                        <option value="desc">Terbaru</option>
+                        <option value="asc">Terlama</option>
+                        <option value="group">Kelompokkan per Hari</option>
+                    </select>
+                </div>
                 <button class="reset-btn" onclick="resetAllData()" id="resetBtn">🗑️ Reset</button>
             </div>
             <div id="expensesList"></div>
@@ -522,6 +550,7 @@
     <script>
         let expenses = [];
         let weeklyBudget = 0;
+        let currentSort = localStorage.getItem('weeklySort') || 'desc';
 
         function loadData() {
             const savedExpenses = localStorage.getItem('weeklyExpenses');
@@ -536,6 +565,10 @@
                 updateBudgetDisplay();
             }
             
+            // initialize sort select
+            const sortEl = document.getElementById('sortSelect');
+            if (sortEl) sortEl.value = currentSort;
+
             renderExpenses();
             updateSummary();
         }
@@ -575,7 +608,11 @@
         }
 
         function formatRupiah(amount) {
-            return 'Rp ' + amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            // handle negative values elegantly
+            const negative = amount < 0;
+            const abs = Math.abs(amount);
+            const formatted = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            return (negative ? '-Rp ' : 'Rp ') + formatted;
         }
 
         function updateSummary() {
@@ -607,12 +644,10 @@
             }
         }
 
-        function calculateRemainingAfter(expenseIndex) {
-            let total = 0;
-            for (let i = 0; i <= expenseIndex; i++) {
-                total += expenses[i].amount;
-            }
-            return weeklyBudget - total;
+        function setSort(val) {
+            currentSort = val;
+            localStorage.setItem('weeklySort', currentSort);
+            renderExpenses();
         }
 
         function renderExpenses() {
@@ -630,34 +665,121 @@
                 return;
             }
 
-            list.innerHTML = expenses.map((exp, index) => {
-                const remaining = calculateRemainingAfter(index);
-                const percentage = weeklyBudget > 0 ? ((weeklyBudget - remaining) / weeklyBudget * 100) : 0;
-                let remainingClass = '';
-                if (percentage > 90) remainingClass = 'critical';
-                else if (percentage > 70) remainingClass = 'low';
+            // create a working copy and sort it according to currentSort
+            let items = [...expenses];
+            if (currentSort === 'asc') {
+                items.sort((a, b) => a.timestamp - b.timestamp);
+            } else {
+                // default desc
+                items.sort((a, b) => b.timestamp - a.timestamp);
+            }
 
-                return `
-                    <div class="expense-item">
-                        <div class="expense-info">
-                            <div class="expense-name">${exp.name}</div>
-                            <div class="expense-meta">
-                                ${exp.date}
-                                <span class="category-badge cat-${exp.category}">
-                                    ${getCategoryName(exp.category)}
-                                </span>
-                            </div>
-                            ${weeklyBudget > 0 ? `
-                                <div class="expense-remaining ${remainingClass}">
-                                    Sisa: ${formatRupiah(remaining)}
+            // build remaining map: remaining after each expense in the sorted list
+            let cumulative = 0;
+            const remainingMap = {};
+            for (let i = 0; i < items.length; i++) {
+                cumulative += items[i].amount;
+                remainingMap[items[i].timestamp] = weeklyBudget > 0 ? (weeklyBudget - cumulative) : 0;
+            }
+
+            // If grouping by day, group items by date key
+            if (currentSort === 'group') {
+                const groups = items.reduce((acc, exp) => {
+                    const dateKey = new Date(exp.timestamp).toLocaleDateString('id-ID'); // dd/mm/yyyy key
+                    if (!acc[dateKey]) acc[dateKey] = [];
+                    acc[dateKey].push(exp);
+                    return acc;
+                }, {});
+
+                // sort group keys descending (most recent day first)
+                const sortedKeys = Object.keys(groups).sort((a, b) => {
+                    return new Date(b) - new Date(a);
+                });
+
+                let html = '';
+                sortedKeys.forEach(key => {
+                    // full display of the day (with weekday)
+                    const firstExp = groups[key][0];
+                    const displayFull = new Date(firstExp.timestamp).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    html += `<div class="day-group"><h4 style="margin:10px 0 8px 0;font-size:14px;color:#666;">${displayFull}</h4>`;
+
+                    groups[key].forEach(exp => {
+                        const remaining = remainingMap[exp.timestamp];
+                        const percentage = weeklyBudget > 0 ? ((weeklyBudget - remaining) / weeklyBudget * 100) : 0;
+                        let remainingClass = '';
+                        if (percentage > 90) remainingClass = 'critical';
+                        else if (percentage > 70) remainingClass = 'low';
+
+                        html += `
+                            <div class="expense-item">
+                                <div class="expense-info">
+                                    <div class="expense-name">${escapeHtml(exp.name)}</div>
+                                    <div class="expense-meta">
+                                        ${exp.date}
+                                        <span class="category-badge cat-${exp.category}">
+                                            ${getCategoryName(exp.category)}
+                                        </span>
+                                    </div>
+                                    ${weeklyBudget > 0 ? `
+                                        <div class="expense-remaining ${remainingClass}">
+                                            Sisa: ${formatRupiah(remaining)}
+                                        </div>
+                                    ` : ''}
                                 </div>
-                            ` : ''}
+                                <div class="expense-amount">${formatRupiah(exp.amount)}</div>
+                                <button class="delete-btn" onclick="deleteExpense(${exp.timestamp})">×</button>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                });
+
+                list.innerHTML = html;
+            } else {
+                // not grouped: simple list in asc/desc order, show running remaining
+                let html = '';
+                for (let i = 0; i < items.length; i++) {
+                    const exp = items[i];
+                    const remaining = remainingMap[exp.timestamp];
+                    const percentage = weeklyBudget > 0 ? ((weeklyBudget - remaining) / weeklyBudget * 100) : 0;
+                    let remainingClass = '';
+                    if (percentage > 90) remainingClass = 'critical';
+                    else if (percentage > 70) remainingClass = 'low';
+
+                    html += `
+                        <div class="expense-item">
+                            <div class="expense-info">
+                                <div class="expense-name">${escapeHtml(exp.name)}</div>
+                                <div class="expense-meta">
+                                    ${exp.date}
+                                    <span class="category-badge cat-${exp.category}">
+                                        ${getCategoryName(exp.category)}
+                                    </span>
+                                </div>
+                                ${weeklyBudget > 0 ? `
+                                    <div class="expense-remaining ${remainingClass}">
+                                        Sisa: ${formatRupiah(remaining)}
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="expense-amount">${formatRupiah(exp.amount)}</div>
+                            <button class="delete-btn" onclick="deleteExpense(${exp.timestamp})">×</button>
                         </div>
-                        <div class="expense-amount">${formatRupiah(exp.amount)}</div>
-                        <button class="delete-btn" onclick="deleteExpense(${index})">×</button>
-                    </div>
-                `;
-            }).reverse().join('');
+                    `;
+                }
+                list.innerHTML = html;
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
         }
 
         function getCategoryName(cat) {
@@ -671,9 +793,11 @@
             return names[cat];
         }
 
-        function deleteExpense(index) {
+        function deleteExpense(timestamp) {
+            const idx = expenses.findIndex(e => e.timestamp === Number(timestamp));
+            if (idx === -1) return;
             if (confirm('Hapus pengeluaran ini?')) {
-                expenses.splice(index, 1);
+                expenses.splice(idx, 1);
                 saveExpenses();
                 renderExpenses();
                 updateSummary();
@@ -726,8 +850,7 @@
             };
 
             expenses.push(expense);
-            expenses.sort((a, b) => b.timestamp - a.timestamp);
-            
+            // keep original storage order unsorted; render will sort as needed
             saveExpenses();
             renderExpenses();
             updateSummary();
@@ -746,6 +869,7 @@
             document.getElementById('expenseDate').value = `${year}-${month}-${day}`;
         }
 
+        // initialize
         document.getElementById('weekInfo').textContent = 'Update terakhir: ' + formatDate();
         loadData();
         setDefaultDate();
