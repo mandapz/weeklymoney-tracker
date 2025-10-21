@@ -549,7 +549,11 @@
             const savedBudget = localStorage.getItem('weeklyBudget');
             
             if (savedExpenses) {
-                expenses = JSON.parse(savedExpenses);
+                try {
+                    expenses = JSON.parse(savedExpenses);
+                } catch (e) {
+                    expenses = [];
+                }
             }
             
             if (savedBudget) {
@@ -557,8 +561,20 @@
                 updateBudgetDisplay();
             }
             
-            // ensure descending order (most recent first)
-            expenses.sort((a, b) => b.timestamp - a.timestamp);
+            // Ensure each expense has createdAt (fallback untuk data lama)
+            expenses = expenses.map(e => {
+                return {
+                    ...e,
+                    // createdAt digunakan untuk membedakan urutan saat timestamp (tanggal) sama
+                    createdAt: e.createdAt || e.timestamp || Date.now()
+                };
+            });
+
+            // Sort: pertama berdasarkan tanggal (timestamp) desc, kalau sama gunakan createdAt desc
+            expenses.sort((a, b) => {
+                if (b.timestamp !== a.timestamp) return b.timestamp - a.timestamp;
+                return b.createdAt - a.createdAt;
+            });
 
             renderExpenses();
             updateSummary();
@@ -599,7 +615,6 @@
         }
 
         function formatRupiah(amount) {
-            // handle negative numbers too
             const sign = amount < 0 ? '-' : '';
             const abs = Math.abs(amount);
             return sign + 'Rp ' + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -634,9 +649,9 @@
             }
         }
 
-        // Perbaikan: hitung sisa dengan menjumlahkan item dari expenseIndex sampai akhir array
-        // Karena expenses diurutkan descending (paling baru di index 0), maka untuk item di index i,
-        // cumulative dari i..end merepresentasikan total pengeluaran sampai pada item itu (termasuk yang lebih lama).
+        // Hitung sisa untuk item pada index tertentu
+        // Karena expenses diurutkan descending (paling baru di index 0),
+        // cumulative total sampai item itu adalah jumlah dari index..end
         function calculateRemainingAfter(expenseIndex) {
             let total = 0;
             for (let i = expenseIndex; i < expenses.length; i++) {
@@ -665,7 +680,6 @@
             const orderedDays = [];
 
             expenses.forEach((exp, index) => {
-                // group key without weekday, ensures same-day grouping
                 const dayKey = new Date(exp.timestamp).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
                 if (!groups[dayKey]) {
                     groups[dayKey] = { items: [], total: 0 };
@@ -679,7 +693,6 @@
             let html = '';
             orderedDays.forEach(dayKey => {
                 const group = groups[dayKey];
-                // full header with weekday + date (nice display)
                 const headerDate = new Date(group.items[0].exp.timestamp).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 html += `
                     <div class="day-group">
@@ -699,7 +712,7 @@
                     html += `
                         <div class="expense-item">
                             <div class="expense-info">
-                                <div class="expense-name">${exp.name}</div>
+                                <div class="expense-name">${escapeHtml(exp.name)}</div>
                                 <div class="expense-meta">
                                     ${exp.date}
                                     <span class="category-badge cat-${exp.category}">
@@ -726,6 +739,15 @@
             list.innerHTML = html;
         }
 
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         function getCategoryName(cat) {
             const names = {
                 makanan: 'Makanan',
@@ -734,7 +756,7 @@
                 hiburan: 'Hiburan',
                 lainnya: 'Lainnya'
             };
-            return names[cat];
+            return names[cat] || cat;
         }
 
         function deleteExpense(index) {
@@ -788,12 +810,19 @@
                 amount: amount,
                 category: category,
                 date: formattedDate,
-                timestamp: selectedDate.getTime()
+                // timestamp untuk grup per-hari (midnight)
+                timestamp: selectedDate.getTime(),
+                // createdAt untuk menentukan urutan input pada hari yang sama
+                createdAt: Date.now()
             };
 
             expenses.push(expense);
-            // keep most-recent-first order
-            expenses.sort((a, b) => b.timestamp - a.timestamp);
+
+            // Sort: tanggal desc, kalau sama gunakan createdAt desc
+            expenses.sort((a, b) => {
+                if (b.timestamp !== a.timestamp) return b.timestamp - a.timestamp;
+                return b.createdAt - a.createdAt;
+            });
             
             saveExpenses();
             renderExpenses();
