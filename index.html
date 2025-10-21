@@ -282,7 +282,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             gap: 8px;
         }
 
@@ -309,13 +309,29 @@
             cursor: pointer;
         }
 
+        /* Styled to match category select (neat, full width) */
+        .sort-wrapper {
+            margin-bottom: 12px;
+        }
         .sort-select {
-            padding: 8px 10px;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-            font-size: 13px;
-            background: #fff;
-            cursor: pointer;
+            width: 100%;
+            padding: 11px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+            padding-right: 40px;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .sort-select:focus {
+            outline: none;
+            border-color: #81c784;
         }
 
         .expense-item {
@@ -535,14 +551,22 @@
             <div class="expenses-list-header">
                 <div class="expenses-list-header-left">
                     <h3>Riwayat Pengeluaran</h3>
+                </div>
+                <button class="reset-btn" onclick="resetAllData()" id="resetBtn">🗑️ Reset</button>
+            </div>
+
+            <!-- Sort control moved BELOW header and styled like kategori (full width, neat) -->
+            <div class="sort-wrapper">
+                <div class="input-group">
+                    <label for="sortSelect">Urutkan / Tampilkan</label>
                     <select id="sortSelect" class="sort-select" onchange="setSort(this.value)" title="Urutkan riwayat">
                         <option value="desc">Terbaru</option>
                         <option value="asc">Terlama</option>
                         <option value="group">Kelompokkan per Hari</option>
                     </select>
                 </div>
-                <button class="reset-btn" onclick="resetAllData()" id="resetBtn">🗑️ Reset</button>
             </div>
+
             <div id="expensesList"></div>
         </div>
     </div>
