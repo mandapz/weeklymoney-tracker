@@ -38,6 +38,7 @@
             color: #81c784;
             font-size: 22px;
             margin-bottom: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
         .week-info {
@@ -281,11 +282,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px;
+            padding: 14px 12px;
             background: #fafafa;
             border-radius: 10px;
-            margin-bottom: 8px;
-            gap: 8px;
+            margin-bottom: 10px;
+            gap: 10px;
         }
 
         .expense-info {
@@ -333,18 +334,26 @@
         }
 
         .delete-btn {
-            background: #ef9a9a;
+            background: #ef5350;
             color: white;
             border: none;
-            width: 30px;
-            height: 30px;
+            min-width: 32px;
+            width: 32px;
+            height: 32px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            font-weight: bold;
+            line-height: 1;
+            padding: 0;
+        }
+        
+        .delete-btn:active {
+            background: #d32f2f;
         }
 
         .category-badge {
@@ -480,7 +489,7 @@
         <div class="expenses-list">
             <div class="expenses-list-header">
                 <h3>Riwayat Pengeluaran</h3>
-                <button class="reset-btn" onclick="resetAllData()" style="display: none;" id="resetBtn">🗑️ Reset</button>
+                <button class="reset-btn" onclick="resetAllData()" id="resetBtn">🗑️ Reset</button>
             </div>
             <div id="expensesList"></div>
         </div>
@@ -584,10 +593,8 @@
 
         function renderExpenses() {
             const list = document.getElementById('expensesList');
-            const resetBtn = document.getElementById('resetBtn');
             
             if (expenses.length === 0) {
-                resetBtn.style.display = 'none';
                 list.innerHTML = `
                     <div class="empty-state">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -598,8 +605,6 @@
                 `;
                 return;
             }
-
-            resetBtn.style.display = 'block';
 
             list.innerHTML = expenses.map((exp, index) => {
                 const remaining = calculateRemainingAfter(index);
