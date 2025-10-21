@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Aplikasi Pengeluaran Mingguan - Catat dan kelola pengeluaran kamu">
+    <title>Pengeluaran Mingguan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #f3e5f5 100%);
+            min-height: 100vh;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #81c784;
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .week-info {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .budget-section {
+            background: white;
+            border-radius: 15px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .budget-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .budget-input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            min-width: 0;
+        }
+
+        .budget-input-group input:focus {
+            outline: none;
+            border-color: #81c784;
+        }
+
+        .budget-btn {
+            padding: 12px 16px;
+            background: #81c784;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .budget-display {
+            text-align: center;
+            padding: 12px;
+            background: #f1f8e9;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .budget-label {
+            font-size: 11px;
+            color: #9e9e9e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .budget-amount {
+            font-size: 20px;
+            font-weight: bold;
+            color: #66bb6a;
+        }
+
+        .summary {
+            background: white;
+            border-radius: 15px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 12px 8px;
+            background: #fafafa;
+            border-radius: 10px;
+        }
+
+        .summary-label {
+            font-size: 10px;
+            color: #9e9e9e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            line-height: 1.2;
+        }
+
+        .summary-value {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+
+        .summary-value.expense {
+            color: #ef9a9a;
+        }
+
+        .summary-value.remaining {
+            color: #81c784;
+        }
+
+        .summary-value.remaining.low {
+            color: #ffb74d;
+        }
+
+        .summary-value.remaining.critical {
+            color: #ef9a9a;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #f5f5f5;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #81c784 0%, #66bb6a 100%);
+            transition: width 0.3s ease;
+            border-radius: 20px;
+        }
+
+        .progress-fill.medium {
+            background: linear-gradient(90deg, #ffb74d 0%, #ffa726 100%);
+        }
+
+        .progress-fill.high {
+            background: linear-gradient(90deg, #ef9a9a 0%, #e57373 100%);
+        }
+
+        .progress-text {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .input-section {
+            background: white;
+            border-radius: 15px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #81c784;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .expenses-list {
+            background: white;
+            border-radius: 15px;
+            padding: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .expenses-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .expenses-list h3 {
+            color: #333;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .reset-btn {
+            background: #ef9a9a;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .expense-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .expense-name {
+            font-weight: 600;
+            color: #424242;
+            margin-bottom: 4px;
+            font-size: 14px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .expense-meta {
+            font-size: 11px;
+            color: #9e9e9e;
+            word-wrap: break-word;
+        }
+
+        .expense-remaining {
+            font-size: 10px;
+            color: #81c784;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .expense-remaining.low {
+            color: #ffb74d;
+        }
+
+        .expense-remaining.critical {
+            color: #ef9a9a;
+        }
+
+        .expense-amount {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ef9a9a;
+            margin-right: 8px;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .delete-btn {
+            background: #ef9a9a;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .cat-makanan {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .cat-transport {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .cat-belanja {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .cat-hiburan {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .cat-lainnya {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .no-budget-warning {
+            text-align: center;
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 10px;
+            color: #856404;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Pengeluaran Mingguan</h1>
+            <div class="week-info" id="weekInfo">Minggu ini</div>
+        </div>
+
+        <div class="budget-section">
+            <div class="budget-input-group">
+                <input type="number" id="budgetInput" placeholder="Masukkan budget mingguan">
+                <button class="budget-btn" onclick="setBudget()">Set Budget</button>
+            </div>
+            <div class="budget-display" id="budgetDisplay" style="display: none;">
+                <div class="budget-label">Budget Mingguan</div>
+                <div class="budget-amount" id="budgetAmount">Rp 0</div>
+            </div>
+        </div>
+
+        <div class="summary">
+            <div id="noBudgetWarning" class="no-budget-warning">
+                ⚠️ Set budget mingguan dulu ya!
+            </div>
+            
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-label">Total Pengeluaran</div>
+                    <div class="summary-value expense" id="totalExpense">Rp 0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Sisa Uang</div>
+                    <div class="summary-value remaining" id="remainingAmount">Rp 0</div>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="progress-text" id="progressText">0% terpakai</div>
+        </div>
+
+        <div class="input-section">
+            <form id="expenseForm">
+                <div class="input-group">
+                    <label>Nama Pengeluaran</label>
+                    <input type="text" id="expenseName" placeholder="Contoh: Makan siang" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Jumlah (Rp)</label>
+                    <input type="number" id="expenseAmount" placeholder="0" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Tanggal</label>
+                    <input type="date" id="expenseDate" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Kategori</label>
+                    <select id="expenseCategory" required>
+                        <option value="makanan">🍔 Makanan & Minuman</option>
+                        <option value="transport">🚗 Transport</option>
+                        <option value="belanja">🛍️ Belanja</option>
+                        <option value="hiburan">🎮 Hiburan</option>
+                        <option value="lainnya">📦 Lainnya</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn">Tambah Pengeluaran</button>
+            </form>
+        </div>
+
+        <div class="expenses-list">
+            <div class="expenses-list-header">
+                <h3>Riwayat Pengeluaran</h3>
+                <button class="reset-btn" onclick="resetAllData()" style="display: none;" id="resetBtn">🗑️ Reset</button>
+            </div>
+            <div id="expensesList"></div>
+        </div>
+    </div>
+
+    <script>
+        let expenses = [];
+        let weeklyBudget = 0;
+
+        function loadData() {
+            const savedExpenses = localStorage.getItem('weeklyExpenses');
+            const savedBudget = localStorage.getItem('weeklyBudget');
+            
+            if (savedExpenses) {
+                expenses = JSON.parse(savedExpenses);
+            }
+            
+            if (savedBudget) {
+                weeklyBudget = parseInt(savedBudget);
+                updateBudgetDisplay();
+            }
+            
+            renderExpenses();
+            updateSummary();
+        }
+
+        function saveExpenses() {
+            localStorage.setItem('weeklyExpenses', JSON.stringify(expenses));
+        }
+
+        function saveBudget() {
+            localStorage.setItem('weeklyBudget', weeklyBudget.toString());
+        }
+
+        function setBudget() {
+            const input = document.getElementById('budgetInput');
+            const amount = parseInt(input.value);
+            
+            if (amount && amount > 0) {
+                weeklyBudget = amount;
+                saveBudget();
+                updateBudgetDisplay();
+                updateSummary();
+                input.value = '';
+            } else {
+                alert('Masukkan jumlah budget yang valid!');
+            }
+        }
+
+        function updateBudgetDisplay() {
+            if (weeklyBudget > 0) {
+                document.getElementById('budgetDisplay').style.display = 'block';
+                document.getElementById('budgetAmount').textContent = formatRupiah(weeklyBudget);
+                document.getElementById('noBudgetWarning').style.display = 'none';
+            } else {
+                document.getElementById('budgetDisplay').style.display = 'none';
+                document.getElementById('noBudgetWarning').style.display = 'block';
+            }
+        }
+
+        function formatRupiah(amount) {
+            return 'Rp ' + amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        function updateSummary() {
+            const totalExpense = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+            const remaining = weeklyBudget - totalExpense;
+            const percentage = weeklyBudget > 0 ? (totalExpense / weeklyBudget * 100) : 0;
+
+            document.getElementById('totalExpense').textContent = formatRupiah(totalExpense);
+            document.getElementById('remainingAmount').textContent = formatRupiah(remaining);
+
+            const remainingEl = document.getElementById('remainingAmount');
+            remainingEl.classList.remove('low', 'critical');
+            if (percentage > 90) {
+                remainingEl.classList.add('critical');
+            } else if (percentage > 70) {
+                remainingEl.classList.add('low');
+            }
+
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            progressFill.style.width = Math.min(percentage, 100) + '%';
+            progressText.textContent = percentage.toFixed(1) + '% terpakai';
+
+            progressFill.classList.remove('medium', 'high');
+            if (percentage > 90) {
+                progressFill.classList.add('high');
+            } else if (percentage > 70) {
+                progressFill.classList.add('medium');
+            }
+        }
+
+        function calculateRemainingAfter(expenseIndex) {
+            let total = 0;
+            for (let i = 0; i <= expenseIndex; i++) {
+                total += expenses[i].amount;
+            }
+            return weeklyBudget - total;
+        }
+
+        function renderExpenses() {
+            const list = document.getElementById('expensesList');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            if (expenses.length === 0) {
+                resetBtn.style.display = 'none';
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                        <p>Belum ada pengeluaran.<br>Yuk mulai catat!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            resetBtn.style.display = 'block';
+
+            list.innerHTML = expenses.map((exp, index) => {
+                const remaining = calculateRemainingAfter(index);
+                const percentage = weeklyBudget > 0 ? ((weeklyBudget - remaining) / weeklyBudget * 100) : 0;
+                let remainingClass = '';
+                if (percentage > 90) remainingClass = 'critical';
+                else if (percentage > 70) remainingClass = 'low';
+
+                return `
+                    <div class="expense-item">
+                        <div class="expense-info">
+                            <div class="expense-name">${exp.name}</div>
+                            <div class="expense-meta">
+                                ${exp.date}
+                                <span class="category-badge cat-${exp.category}">
+                                    ${getCategoryName(exp.category)}
+                                </span>
+                            </div>
+                            ${weeklyBudget > 0 ? `
+                                <div class="expense-remaining ${remainingClass}">
+                                    Sisa: ${formatRupiah(remaining)}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="expense-amount">${formatRupiah(exp.amount)}</div>
+                        <button class="delete-btn" onclick="deleteExpense(${index})">×</button>
+                    </div>
+                `;
+            }).reverse().join('');
+        }
+
+        function getCategoryName(cat) {
+            const names = {
+                makanan: 'Makanan',
+                transport: 'Transport',
+                belanja: 'Belanja',
+                hiburan: 'Hiburan',
+                lainnya: 'Lainnya'
+            };
+            return names[cat];
+        }
+
+        function deleteExpense(index) {
+            if (confirm('Hapus pengeluaran ini?')) {
+                expenses.splice(index, 1);
+                saveExpenses();
+                renderExpenses();
+                updateSummary();
+            }
+        }
+
+        function resetAllData() {
+            if (confirm('Yakin mau hapus SEMUA data (budget + pengeluaran)?')) {
+                if (confirm('Data akan hilang permanen! Lanjutkan?')) {
+                    expenses = [];
+                    weeklyBudget = 0;
+                    localStorage.removeItem('weeklyExpenses');
+                    localStorage.removeItem('weeklyBudget');
+                    updateBudgetDisplay();
+                    renderExpenses();
+                    updateSummary();
+                    alert('Semua data berhasil dihapus!');
+                }
+            }
+        }
+
+        function formatDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return now.toLocaleDateString('id-ID', options);
+        }
+
+        document.getElementById('expenseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('expenseName').value;
+            const amount = parseInt(document.getElementById('expenseAmount').value);
+            const dateInput = document.getElementById('expenseDate').value;
+            const category = document.getElementById('expenseCategory').value;
+
+            const selectedDate = new Date(dateInput + 'T00:00:00');
+            const formattedDate = selectedDate.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            const expense = {
+                name: name,
+                amount: amount,
+                category: category,
+                date: formattedDate,
+                timestamp: selectedDate.getTime()
+            };
+
+            expenses.push(expense);
+            expenses.sort((a, b) => b.timestamp - a.timestamp);
+            
+            saveExpenses();
+            renderExpenses();
+            updateSummary();
+
+            this.reset();
+            setDefaultDate();
+            
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        });
+
+        function setDefaultDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('expenseDate').value = `${year}-${month}-${day}`;
+        }
+
+        document.getElementById('weekInfo').textContent = 'Update terakhir: ' + formatDate();
+        loadData();
+        setDefaultDate();
+    </script>
+</body>
+</html>
